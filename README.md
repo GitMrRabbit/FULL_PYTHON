@@ -155,3 +155,7 @@
 ---
 
 **Удачи в изучении Python! Главное — практика каждый день, даже по 30 минут.** 🚀
+
+<div align="right">
+ <img style="display: inline-block; vertical-align: middle;" src="logo/SL.png" alt="Author" width="70">
+</div>
