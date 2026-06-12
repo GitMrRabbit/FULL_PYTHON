@@ -1,0 +1,57 @@
+# ============================================================
+# Docker Compose: Selenoid + Selenoid UI + Тестовый контейнер
+# ============================================================
+#
+# Запуск:
+#   docker-compose up -d                    # Запустить Selenoid
+#   docker-compose run tests                # Запустить тесты
+#   docker-compose down                     # Остановить всё
+#
+# Selenoid UI: http://localhost:8080
+
+version: '3.8'
+
+services:
+  # === Selenoid — замена Selenium Grid ===
+  selenoid:
+    image: aerokube/selenoid:latest-release
+    container_name: selenoid
+    network_mode: bridge
+    ports:
+      - "4444:4444"
+    volumes:
+      - "./browsers.json:/etc/selenoid/browsers.json:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    command: ["-conf", "/etc/selenoid/browsers.json", "-limit", "5"]
+
+  # === Selenoid UI — веб-интерфейс ===
+  selenoid-ui:
+    image: aerokube/selenoid-ui:latest-release
+    container_name: selenoid-ui
+    network_mode: bridge
+    ports:
+      - "8080:8080"
+    command: ["--selenoid-uri", "http://selenoid:4444"]
+
+  # === Тестовый контейнер ===
+  tests:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: test-runner
+    depends_on:
+      - selenoid
+    environment:
+      - SELENOID_URL=http://selenoid:4444/wd/hub
+      - BASE_URL=${BASE_URL:-https://www.saucedemo.com}
+      - API_BASE_URL=${API_BASE_URL:-https://jsonplaceholder.typicode.com}
+      - HEADLESS=true
+    volumes:
+      - ../reports:/app/reports
+      - ../screenshots:/app/screenshots
+    command: >
+      pytest
+      -v
+      --alluredir=/app/reports/allure-results
+      -n 2
+      --timeout 60
